@@ -4,3 +4,6 @@
 
 - En jernbane er lang
 - Den har flere tog
+
+- Annkomst- / Avgangstid kan settes til Null 
+- Banestrekning er hele banen
