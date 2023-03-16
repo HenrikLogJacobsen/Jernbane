@@ -11,4 +11,7 @@ def db_insert(cursor , table_name: str, values: list) :
     quer = f"INSERT INTO '{table_name}' VALUES ({s})"
     print(quer)
     cursor.execute(quer)
+
+
+
     
