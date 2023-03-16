@@ -31,7 +31,6 @@ q.db_insert(cursor, "TogruteForekomst", ['2', 'SJ', "0", 'Trondheim', 'Bodø'])
 
 q.db_select(cursor, "Stol", ["*"])
 q.db_select(cursor, "Kupe", ["*"])
-#stasjoner på ruten 
 q.db_insert(cursor, "PaRute", ['Trondheim S', '2', '23:05', '23:05'])
 q.db_insert(cursor, "PaRute", ['Steinkjer', '2', '00:57', '00:57'])
 q.db_insert(cursor, "PaRute", ['Mosjøen', '2', '04:41', '04:41'])
@@ -50,8 +49,6 @@ q.db_insert(cursor, "PaRute", ['Trondheim S', '3', '14:13', '14:13'])
 
 
 
-
-
 con.commit()
 
 q.db_select(cursor, "Togrute", ["*"])
@@ -64,6 +61,7 @@ print(cursor.fetchall())
 
 
 con.close()
+
 
 
 

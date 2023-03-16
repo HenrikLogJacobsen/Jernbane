@@ -10,7 +10,7 @@ def db_insert(cursor , table_name: str, values: list[str]) :
                 also in the right order. 
     """
 
-    s = f'{values[0]}' if values[0] else ""
+    s = "'" + values[0]+"'" if values[0] else ""
 
     for i in range(1, len(values)): 
         s += ", " + "'" +values[i]+"'"  if values[i] else ", null"
@@ -36,7 +36,7 @@ def db_select(cursor, table_name:list , values: list or None, condition:list = N
 
     s =f'{values[0]}' 
 
-    tn = table_name[0]
+    tn = f'{table_name[0]}'
 
     for i in range(1, len(table_name)): 
         tn += ", " + "'"+table_name[i]+"'"
