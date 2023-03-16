@@ -1,7 +1,7 @@
 import sqlite3
 import queries as q
 
-con = sqlite3.connect("prosjekt.db")
+con = sqlite3.connect("./db/prosjekt.db")
 
 cursor = con.cursor()
 

@@ -1,6 +1,6 @@
 import sqlite3
 
-def db_insert(tabele_name: str, values: list) :
+def db_insert(table_name: str, values: list) :
 
     con = sqlite3.connect("prosjekt.db")
 
