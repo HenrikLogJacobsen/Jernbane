@@ -1,17 +1,14 @@
 import sqlite3
 
-def db_insert(table_name: str, values: list) :
+def db_insert(cursor , table_name: str, values: list) :
 
-    con = sqlite3.connect("prosjekt.db")
+    s = "'"+values[0]+"'"
 
-    cursor = con.cursor()
-
-    s = ""
-
-    for element in values: 
-        s += element + ","
+    for i in range(1, len(values)): 
+        s += ", " + "'" +values[i]+"'" 
 
     
-
-    cursor.execute("INSERT INTO {table_name} VALUES ({s})")
+    quer = f"INSERT INTO '{table_name}' VALUES ({s})"
+    print(quer)
+    cursor.execute(quer)
     
