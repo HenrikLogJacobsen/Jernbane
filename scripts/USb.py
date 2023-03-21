@@ -24,6 +24,12 @@ q.db_insert(cursor, "PaRute", ['Mo i Rana', '1', '14:31', '14:31'])
 q.db_insert(cursor, "PaRute", ['Fauske', '1', '16:49', '16:49'])
 q.db_insert(cursor, "PaRute", ['Bodø', '1', '17:34', '17:34'])
 
+q.db_insert(cursor, "RutePaUkedag", ['1', 'mandag'])
+q.db_insert(cursor, "RutePaUkedag", ['1', 'tirsdag'])
+q.db_insert(cursor, "RutePaUkedag", ['1', 'onsdag'])
+q.db_insert(cursor, "RutePaUkedag", ['1', 'torsdag'])
+q.db_insert(cursor, "RutePaUkedag", ['1', 'fredag'])
+
 
 #Nattog fra Trondheim til Bodø
 q.db_insert(cursor, "Togrute", ['2', 'SJ', "0", 'Trondheim', 'Bodø'])
@@ -38,6 +44,16 @@ q.db_insert(cursor, "PaRute", ['Mo i Rana', '2', '05:55', '05:55'])
 q.db_insert(cursor, "PaRute", ['Fauske', '2', '08:19', '08:19'])
 q.db_insert(cursor, "PaRute", ['Bodø', '2', '09:05', '09:05'])
 
+q.db_insert(cursor, "RutePaUkedag", ['2', 'mandag'])
+q.db_insert(cursor, "RutePaUkedag", ['2', 'tirsdag'])
+q.db_insert(cursor, "RutePaUkedag", ['2', 'onsdag'])
+q.db_insert(cursor, "RutePaUkedag", ['2', 'torsdag'])
+q.db_insert(cursor, "RutePaUkedag", ['2', 'fredag'])
+q.db_insert(cursor, "RutePaUkedag", ['2', 'lørdag'])
+q.db_insert(cursor, "RutePaUkedag", ['2', 'søndag'])
+
+
+
 #Morgentog fra Mo i Rana til Trondheim 
 q.db_insert(cursor, "Togrute", ['3', 'SJ', "1", 'Mo i Rana', 'Trondheim'])
 
@@ -46,6 +62,15 @@ q.db_insert(cursor, "PaRute", ['Mo i Rana', '3', '08:11', '08:11'])
 q.db_insert(cursor, "PaRute", ['Mosjøen', '3', '09:14', '09:14'])
 q.db_insert(cursor, "PaRute", ['Steinkjer', '3', '12:31', '12:31'])
 q.db_insert(cursor, "PaRute", ['Trondheim S', '3', '14:13', '14:13'])
+
+q.db_insert(cursor, "RutePaUkedag", ['3', 'mandag'])
+q.db_insert(cursor, "RutePaUkedag", ['3', 'tirsdag'])
+q.db_insert(cursor, "RutePaUkedag", ['3', 'onsdag'])
+q.db_insert(cursor, "RutePaUkedag", ['3', 'torsdag'])
+q.db_insert(cursor, "RutePaUkedag", ['3', 'fredag'])
+
+
+
 
 
 
