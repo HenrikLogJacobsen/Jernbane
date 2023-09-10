@@ -12,14 +12,14 @@ def db_insert(cursor , table_name: str, values: list[str]) :
 
     s = "'" + values[0]+"'" if values[0] else ""
 
+    val = tuple(values)
+
     for i in range(1, len(values)): 
         s += ", " + "'" +values[i]+"'"  if values[i] else ", null"
 
     try:
         quer = f"INSERT INTO '{table_name}' VALUES ({s})"
-        print(quer)
         cursor.execute(quer)
-
     except Exception as e:
         print(e)
 
@@ -54,8 +54,7 @@ def db_select(cursor, table_name:list , values: list or None, condition:list = N
             c += ", " + "'" +condition[i] + "'" 
 
         quer = f"SELECT {s} FROM '{tn}' WHERE {c}"
-        print(quer)
-        pass
+        
 
     cursor.execute(quer)
 

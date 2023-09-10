@@ -1,5 +1,7 @@
 import queries as q
 
+# metoder for å sette inn data for forskjellige vogntyper
+
 def sjSittevogn1 (cursor, vognId):
     totalChairs = 12
     # MERK: Type-attributtet er 1 for sittevogn, 0 for sovevogn

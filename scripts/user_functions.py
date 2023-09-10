@@ -7,8 +7,7 @@ import re
 
 pat = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,7}\b'
 
-"""Pre-defined commonly used queries"""
-
+# Pre-defined commonly used queries
 
 def get_all_routes(cursor, stasjonsnavn: str, ukedag:str ) :
 
@@ -19,31 +18,34 @@ def get_all_routes(cursor, stasjonsnavn: str, ukedag:str ) :
 #             ukedag: dagen vi vil ha rutene  
 #     """
 
-        quer = """
-        SELECT Togrute.*
-        FROM Togrute
-        NATURAL JOIN RutePaUkedag
-        NATURAL JOIN PaRute
-        WHERE StasjonNavn = ?
-        AND Ukedag = ?
-        """
+    quer = """
+    SELECT Togrute.*
+    FROM Togrute
+    NATURAL JOIN RutePaUkedag
+    NATURAL JOIN PaRute
+    WHERE StasjonNavn = ?
+    AND Ukedag = ?
+    """
+
+    qstr = str(quer)
+
+    cursor.execute(qstr, (stasjonsnavn, ukedag))
+
+    routes = cursor.fetchall()
+    if len(routes) == 0: 
     
-        qstr = str(quer)
-
-        cursor.execute(qstr, (stasjonsnavn, ukedag))
-        
-
-
+        raise Exception("ingen ruter som matcher søket.")
+    return routes
 
 def create_user(cursor, Navn: str, Epostadresse: str, Mobilnummer: str): 
 
     """
     brukerhistorie e, legger til en kunde i databasen
     INPUT: 
-            KundeNr: kundenummeret til kunden (burde ver noe automatikk i den)
             Navn: navn til kunden 
             Epostadresse: epostadresse til kunden
             Mobilnummer: mobilnummer til kunden
+
     """
     if (not re.match(pat, Epostadresse)):
         raise Exception("Ugyldig email")
@@ -57,10 +59,13 @@ def create_user(cursor, Navn: str, Epostadresse: str, Mobilnummer: str):
         raise Exception("Mobilnummer kan bare bestå av tall")
 
     #Ny bruker vil ha ett høyere kundenummer enn det høyeste som finnes fra før
-    KundeNr = str(cursor.execute("SELECT MAX(KundeNr) FROM Kunde").fetchone()[0] + 1)
+    KundeNr = (cursor.execute("SELECT MAX(KundeNr) FROM Kunde").fetchone()[0])
+    if not KundeNr : 
+        KundeNr = str(1)
+    else: 
+        KundeNr = str(KundeNr+1)
 
-    q.db_insert(cursor, "Kunde", [KundeNr, Navn, Epostadresse, Mobilnummer])
-
+    cursor.execute("INSERT INTO Kunde (KundeNr, Navn, Epostadresse, Mobilnummer) VALUES(?, ?, ?, ?)", (KundeNr, Navn, Epostadresse, Mobilnummer))
 
 def find_nordlandsbanen(cursor):
     cursor.execute('''
@@ -79,7 +84,6 @@ def find_nordlandsbanen(cursor):
 
     return nordlandsbanen
 
-
 def find_route(cursor, startstasjon, endestasjon, klokkeslett, dag) : 
 
     """ 
@@ -88,10 +92,10 @@ def find_route(cursor, startstasjon, endestasjon, klokkeslett, dag) :
             startstasjon: stasjonen kunden reiser fra
             endestasjon: stasjonen kunden reiser til
             klokkeslett: klokkeslett som ruten tidligst skal gå
-            dag: ukedagen ruten skal gå
+            dag: datoen ruten skal gå
 
     OUTPUT: 
-            gir ut alle ruter som oppfyller kravene til input, for ukedagen søkt på og dagen etter
+           liste med alle ruter som oppfyller kravene til input, for datoen søkt på og dagen etter
     """
 
     sortert_stasjoner = find_nordlandsbanen(cursor)
@@ -124,31 +128,37 @@ def find_route(cursor, startstasjon, endestasjon, klokkeslett, dag) :
     cursor.execute(qstr,(klokkeslett, dag, dag, startstasjon, retning))
 
     routes = cursor.fetchall()
+    if len(routes) == 0: 
+        raise Exception("ingen ruter som matcher søket")
+    
     return routes
     
 def available_tickets (cursor, type, dato, togruteID) :
 
-    cursor.execute(f"SELECT togruteforekomst.forekomstid FROM togruteforekomst where togruteforekomst.ukedag == '{dato}' AND togruteforekomst.togruteid == '{togruteID}'")
+    """
+    Finner alle ledige sitte/ sove plasser på en spesifik togrute forekomst.
+    INPUT: 
+            type: "seng" eller "stol", spesifiserer typen billett man vil se etter.
+            dato: datoen man vil se på billett, format "dd-mm-yyyy"
+            togruteID: 1, 2 eller 3, spesifiserer den ruten man skal ta
+    OUTPUT: 
+            en liste med alle ledige plasser på toget, sengeplasser eller sitteplasser.
+     
+    """
+
+    cursor.execute("SELECT togruteforekomst.forekomstid FROM togruteforekomst where togruteforekomst.ukedag == ? AND togruteforekomst.togruteid == ?", (dato, togruteID))
 
     forekomst = cursor.fetchall()[0]
     forekomst = forekomst[0]
-    print(forekomst)
-
-
-    cursor.execute(f"SELECT * FROM Vognoppsett NATURAL JOIN Vogn WHERE RuteID == '2'")
-    vogntyper = []
-    for el in cursor.fetchall(): 
-        vogntyper.append(el[3])
-
-    
+  
     if type == 'seng': 
 
-        cursor.execute(f"""
+        cursor.execute("""
                 SELECT seng.sengnr, seng.kupenr, vognoppsett.vognnr, togruteforekomst.forekomstid, togruteforekomst.ukedag FROM 
                 seng
                 NATURAL JOIN Vogn 
                 NATURAL JOIN Vognoppsett
-                JOIN Togruteforekomst ON (Togruteforekomst.togruteID == Vognoppsett.ruteid AND Togruteforekomst.ukedag=='{dato}' AND Togruteforekomst.forekomstid == '{forekomst}')
+                JOIN Togruteforekomst ON (Togruteforekomst.togruteID == Vognoppsett.ruteid AND Togruteforekomst.ukedag==? AND Togruteforekomst.forekomstid == ?)
 
                 EXCEPT 
 
@@ -157,9 +167,12 @@ def available_tickets (cursor, type, dato, togruteID) :
                 NATURAL JOIN Kundeordre 
                 NATURAL JOIN Togruteforekomst
                 JOIN Seng ON Seng.kupenr == Sengebillett.kupenr
-                WHERE togruteforekomst.ukedag == '{dato}'
-                """)
+                WHERE togruteforekomst.ukedag == ?
+                """, (dato, forekomst, dato))
         ava = cursor.fetchall()
+
+        if len(ava) == 0: 
+            raise Exception("Ingen ledige reise ved gitt søk")
         return ava
         
     elif type == 'stol': 
@@ -172,12 +185,12 @@ def available_tickets (cursor, type, dato, togruteID) :
                 NATURAL JOIN Vognoppsett 
                 JOIN Togruteforekomst ON Togruteforekomst.TogruteID == Vognoppsett.RuteID
 
-                WHERE Togruteforekomst.Ukedag == '{dato}' 
-                    AND Togruteforekomst.ForekomstID == '{forekomst}'
+                WHERE Togruteforekomst.Ukedag == ? 
+                    AND Togruteforekomst.ForekomstID == ?
                     
                     
                 ORDER BY Vognoppsett.Vognnr
-                """)
+                """, (dato, forekomst))
 
 
         alleStoler =  cursor.fetchall()
@@ -188,25 +201,38 @@ def available_tickets (cursor, type, dato, togruteID) :
                 Sittebillett 
                 NATURAL JOIN Kundeordre
                 NATURAL JOIN Togruteforekomst
-                WHERE togruteforekomst.Ukedag == '{dato}'
-                AND Togruteforekomst.forekomstID = '{forekomst}'
-                """)
+                WHERE togruteforekomst.Ukedag == ?
+                AND Togruteforekomst.forekomstID = ?
+                """, (dato, forekomst))
 
         opptatteStoler =  cursor.fetchall()
 
         ava = available_chairs(cursor, "Steinkjer", "Fauske", alleStoler, opptatteStoler)
+        if len(ava) == 0: 
+            raise Exception("Ingen plasser som matcher søket.")
         return ava
+    
+def buy_ticket_seng(cursor, kundeNr, RuteID, startstasjon, endestasjon, dato, sengNr, vognNr):
 
-        
+    """" 
+    oppretter en billett og legger den inn i databasen gitt at input oppfyller krav. Sjekker om biletten er mot en seng som er ledig. 
+    INPUT: 
+            kundeNr: kunden som skal kjøpe billett, må være bruker for å kjøpe
+            RuteID: ruten man vil kjøpe billett på 
+            start- og endestasjon: hvor man vil reise fra / til 
+            dato: datoen man skal kjøpe billett for
+            sengNr: sengen på toget man vil kjøpe 
+            vognNr: hvilken av vognene til sengen. Denne med sengNr utgjør en spesifik seng på toget. 
+    
+    """
 
-def buy_ticket_seng(cursor, kundeNr, RuteID, startstasjon, endestasjon, klokkeslett, dato, sengNr, vognNr):
-
-    cursor.execute(f"SELECT kunde.kundenr FROM kunde WHERE kundenr=='{kundeNr}'")
+    cursor.execute("SELECT kunde.kundenr FROM kunde WHERE kundenr== ? ", (kundeNr, ))
 
     kunder = cursor.fetchall()
 
     if len(kunder) != 1: 
-        print("må være kunde for å kjøpe billett")
+        raise Exception("Du må være kunde for å kjøpe billett")
+        
         
     cursor.execute("SELECT * FROM SengeBillett ORDER BY BilettNr DESC")
 
@@ -224,21 +250,19 @@ def buy_ticket_seng(cursor, kundeNr, RuteID, startstasjon, endestasjon, klokkesl
     else: 
         OrdreNr=1
 
-    cursor.execute(f"SELECT * FROM TogruteForekomst WHERE Ukedag=='{dato}' AND TogruteID == '{RuteID}'")
+    cursor.execute("SELECT * FROM TogruteForekomst WHERE Ukedag== ? AND TogruteID == ?", (dato, RuteID))
 
     forekomst = cursor.fetchall()[0][0]
 
-    cursor.execute(f"SELECT kupeNr FROM Seng WHERE SengNr == {sengNr[0]}")
+    cursor.execute("SELECT kupeNr FROM Seng WHERE SengNr == ?", (sengNr[0], ))
 
     kupeNr = cursor.fetchall()[0][0]
 
     if len(sengNr) > 1 :    
         if not (sengNr[0]%2==1 and sengNr[0]+1==sengNr[1]): 
-            print("senger må ver i samme kupee eeeee eee e e e e e ee ee ")
-            return 
+            raise Exception("senger må ver i samme kupee eeeee eee e e e e e ee ee ") 
 
 
-    print(dato, RuteID)
     lst = available_tickets(cursor, "seng", dato, RuteID)
    
     beds = set()
@@ -246,35 +270,43 @@ def buy_ticket_seng(cursor, kundeNr, RuteID, startstasjon, endestasjon, klokkesl
     for nr in sengNr: 
         beds.add((nr, kupeNr, vognNr, forekomst, dato))
 
-    print(lst)
-    print(beds)
-
-        
     if beds.issubset(lst) : 
-        # good 
-        print("good")
-
-
-        cursor.execute(f""" 
-                    INSERT INTO Kundeordre VALUES ('{OrdreNr}', '{forekomst}', 'NULL', 'NULL', '{kundeNr}', '{startstasjon}', '{endestasjon}')
-                    """)
+        cursor.execute(""" 
+                    INSERT INTO Kundeordre VALUES (?, ?, 'NULL', 'NULL', ?, ?, ?)
+                    """, (OrdreNr, forekomst, kundeNr, startstasjon, endestasjon))
 
         for bed in beds: 
 
-            cursor.execute(f""" 
-                    INSERT INTO SengeBillett VALUES ('{BillettNr}', '{OrdreNr}', '{bed[0]}', '{vognNr}', '{bed[1]}')
-                    """)
+            cursor.execute(""" 
+                    INSERT INTO SengeBillett VALUES (?, ?, ?, ?, ?)
+                    """, (BillettNr, OrdreNr, bed[0], vognNr, bed[1]))
             BillettNr += 1 
+
+            print(f"KJØP: BillettNR: {BillettNr} | OrdreNr: {OrdreNr} | SengNr: {bed[0]} | VognNr: {vognNr}")
         
     else: 
-        #good`nt
-        print("Seng opptatt")
-
-
-
+        raise Exception("Seng opptatt")
         
-def buy_ticket_stol(cursor, kundeNr, RuteID, startstasjon, endestasjon, klokkeslett, dato, stolNr, vognNr): 
+def buy_ticket_stol(cursor, kundeNr, RuteID, startstasjon, endestasjon, dato, stolNr, vognNr): 
 
+    """" 
+    oppretter en billett og legger den inn i databasen gitt at input oppfyller krav. Sjekker om biletten er mot en stol som er ledig. 
+    INPUT: 
+            kundeNr: kunden som skal kjøpe billett, må være bruker for å kjøpe
+            RuteID: ruten man vil kjøpe billett på 
+            start- og endestasjon: hvor man vil reise fra / til 
+            dato: datoen man skal kjøpe billett for
+            stolNr: sengen på toget man vil kjøpe 
+            vognNr: hvilken av vognene til sengen. Denne med stolNr utgjør en spesifik stol på toget. 
+    
+    """
+    cursor.execute("SELECT kunde.kundenr FROM kunde WHERE kundenr== ? ", (kundeNr, ))
+
+    kunder = cursor.fetchall()
+
+    if len(kunder) != 1: 
+        raise Exception("Du må være kunde for å kjøpe billett")
+    
     cursor.execute("SELECT * FROM SitteBillett ORDER BY BillettNr DESC")
 
     Billett = cursor.fetchall()
@@ -287,15 +319,15 @@ def buy_ticket_stol(cursor, kundeNr, RuteID, startstasjon, endestasjon, klokkesl
 
     Ordre = cursor.fetchall()
     if Ordre: 
-        OrdreNr = Ordre[0][0]+1
+        OrdreNr = str(Ordre[0][0]+1)
     else: 
-        OrdreNr=1
+        OrdreNr=str(1)
 
-    cursor.execute(f"SELECT * FROM TogruteForekomst WHERE Ukedag=='{dato}' AND TogruteID == '{RuteID}'")
-
+    cursor.execute("SELECT * FROM TogruteForekomst WHERE Ukedag== ? AND TogruteID == ?", (dato,RuteID))
     forekomst = cursor.fetchall()[0][0]
 
-    cursor.execute(f"SELECT VognID FROM Vognoppsett WHERE VognNr={vognNr} AND RuteID={RuteID}")
+    quer = "SELECT VognID FROM Vognoppsett WHERE VognNr=? AND RuteID=?"
+    cursor.execute("SELECT VognID FROM Vognoppsett WHERE VognNr=? AND RuteID=?", (vognNr,RuteID))
     vognID = cursor.fetchall()[0][0]
 
 
@@ -307,36 +339,103 @@ def buy_ticket_stol(cursor, kundeNr, RuteID, startstasjon, endestasjon, klokkesl
 
         chairs.add((chair, vognNr, forekomst))
     
-    print(chairs)
-
     if ( chairs.issubset(lst) ) : 
-        print("good") 
-        cursor.execute(f""" 
-                    INSERT INTO Kundeordre VALUES ('{OrdreNr}', '{forekomst}', 'NULL', 'NULL', '{kundeNr}', '{startstasjon}', '{endestasjon}')
-                    """)
-
+        quer = """ 
+                    INSERT INTO Kundeordre VALUES (?,?, 'NULL', 'NULL', ?, ?, ?)
+                    """
+        cursor.execute(quer, (OrdreNr,forekomst,kundeNr,startstasjon,endestasjon))
         for chair in chairs: 
 
-            cursor.execute(f""" 
-                    INSERT INTO SitteBillett VALUES ('{BillettNr}', '{OrdreNr}', '{chair[0]}', '{vognNr}')
-                    """)
+            c = chair[0]
+
+            quer = """ 
+                    INSERT INTO SitteBillett (BillettNr, OrdreNr, StolNr, VognNr) VALUES (?,?,?,?)
+                    """
+            cursor.execute(quer, (BillettNr, OrdreNr, c, vognNr))
             BillettNr += 1 
+            print(f"KJØP: BillettNR: {BillettNr} | OrdreNr: {OrdreNr} | StolNr: {chair[0]} | VognNr: {vognNr}")
 
     else: 
-        print("stol tatt ")
-
-
+        raise Exception("stol tatt")
     
-    
+def getOrderInfo(cursor, KundeNr):
+    """
+    Tar inn KundeNr og gir ut informasjon om ordre knyttet til det kundenummeret. 
+    Biletter på togruter som har vært blir ikke tatt med ettersom brukerhistorien pressiserte dette.
+    INPUT: 
+            KundeNr: Kundenummeret til den aktuelle kunden. 
+    """
 
+    today_str = date.today().strftime("%d-%m-%Y")
+    today = datetime.strptime(today_str, '%d-%m-%Y').date()
+    seats = []
+    beds = []
+    quer = """
+        SELECT Kundeordre.ordreNr, Kunde.Navn, Kundeordre.startstasjon, parute.avgangstid, Kundeordre.endestasjon, TogruteForekomst.ukedag
+        FROM Kunde
+        NATURAL JOIN Kundeordre
+        NATURAL JOIN Togruteforekomst
+        JOIN parute ON parute.ruteID == TogruteForekomst.togruteID AND Kundeordre.startstasjon == parute.stasjonnavn
+        WHERE Kunde.KundeNr == ?
+    """
+    cursor.execute(quer, (KundeNr,))
+    kundeinfo = cursor.fetchall()
 
+    if len(kundeinfo) == 0:
+        raise Exception("Finner ingen ordre på denne kunden")
 
+    updatedinfo = []
+    #Fjerner tidligere billetter
+    for el in kundeinfo:
+        date_str = el[-1]
+        temp_date = datetime.strptime(date_str, '%d-%m-%Y').date()
+        if temp_date > today:
+            updatedinfo.append(el)
 
+    cursor.execute(f"""
+                    SELECT sittebillett.ordreNr FROM sittebillett
+    """)
+    seatlist = [x[0] for x in cursor.fetchall()]
 
+    resinfo = []
+
+    billettet = []
+
+    # Formatterer informasjonen til å kunne vises til bruker
+    for el in updatedinfo:
+        if el[0] in seatlist:
+            l = getseatnums(cursor, el[0])
+            for elmnt in l:
+                
+                stolnr = elmnt[0]
+                vognnr = elmnt[1]
+
+                seats.append(elmnt)
+
+                billettet.append([el[1], "stol", stolnr, vognnr, " ", el[2], el[3], el[4], el[5]])
+        else:
+            l = getbednums(cursor, el[0])
+            for elmnt in l:
+        
+
+                sengnr = elmnt[0]
+                vognnr = elmnt[1]
+                kupenr = elmnt[2]
+               
+                billettet.append([el[1], "seng", sengnr, vognnr, kupenr, el[2], el[3], el[4], el[5]])
+
+                resinfo.append(el)
+                beds.append(elmnt)
+
+    return billettet
 
 ## KOMPLIMENTÆRE FUNKSJONER 
 
 def get_intervals(cursor, startStasjon, stopStasjon, forekomstID):
+    """
+    Hjelpefunksjon til available_tickets
+    OUTPUT: alle delstrekninger mellom to stasjoner
+    """
     stations = find_nordlandsbanen(cursor)
     intervals = []
     startIdx = -1
@@ -362,6 +461,9 @@ def get_intervals(cursor, startStasjon, stopStasjon, forekomstID):
     return intervals
 
 def chair_in_interval(cursor, startStation, stopStation, bookedChair):
+    """ 
+    Hjelpefunksjon til available_tickets
+    """
     intervals = get_intervals(cursor, startStation, stopStation, bookedChair[2])
     chairIntervals = get_intervals(cursor, bookedChair[3], bookedChair[4], bookedChair[2])
 
@@ -373,98 +475,54 @@ def chair_in_interval(cursor, startStation, stopStation, bookedChair):
 
 def available_chairs(cursor, startStation, stopStation, allChairs, bookedChairs):
 
+    """
+    Hjelpefunksjon til available_tickets
+    """
+
     available = allChairs
-    print(available)
     
     for bookedChair in bookedChairs:
         if chair_in_interval(cursor, startStation, stopStation, bookedChair):
             #remove chair from allchairs
-            print(bookedChair)
             available.remove((bookedChair[0], bookedChair[1], bookedChair[2]))
 
     return available
 
-
-def getOrderInfo(cursor, KundeNr):
-    today_str = date.today().strftime("%d-%m-%Y")
-    today = datetime.strptime(today_str, '%d-%m-%Y').date()
-    seats = []
-    beds = []
-    cursor.execute(f"""
-        SELECT Kundeordre.ordreNr, Kunde.Navn, Kundeordre.startstasjon, parute.avgangstid, Kundeordre.endestasjon, TogruteForekomst.ukedag
-        FROM Kunde
-        NATURAL JOIN Kundeordre
-        NATURAL JOIN Togruteforekomst
-        JOIN parute ON parute.ruteID == TogruteForekomst.togruteID AND Kundeordre.startstasjon == parute.stasjonnavn
-        WHERE Kunde.KundeNr == '{KundeNr}'
-    """)
-    kundeinfo = cursor.fetchall()
-    print("kundeinfo lengde: ", len(kundeinfo)) 
-    updatedinfo = []
-    for el in kundeinfo:
-        date_str = el[-1]
-        temp_date = datetime.strptime(date_str, '%d-%m-%Y').date()
-        if temp_date > today:
-            updatedinfo.append(el)
-    cursor.execute(f"""
-                    SELECT sengebillett.ordreNr FROM Sengebillett
-        """)
-    bedlist = [x[0] for x in cursor.fetchall()]
-
-    cursor.execute(f"""
-                    SELECT sittebillett.ordreNr FROM sittebillett
-    """)
-    seatlist = [x[0] for x in cursor.fetchall()]
-    for el in updatedinfo:
-        print("el: ", el[0], "list: ", seatlist)
-        if el[0] in seatlist:
-            seats.append(getseatnums(cursor, el[0]))
-        else:
-            beds.append(getbednums(cursor, el[0]))
-    print("seats: ", seats)
-    print("beds: ", beds)
-    return updatedinfo
-
 def getseatnums(cursor, orderNr):
-    temp = []
-    cursor.execute(f"""
+    """
+    Hjelpefunksjon til getOrderInfo som gir en liste over seter knyttet til denne kunden
+    INPUT:
+            ordreNR: Ordrenummer til ordren 
+    OUTPUT:
+            En liste med stolnummer, vognnummer knyttet til sete(r) på denne ordren
+
+    """
+    
+    quer = """
                 SELECT sittebillett.stolnr, sittebillett.vognNr FROM sittebillett
-                WHERE sittebillett.ordreNr == '{orderNr}'
-    """)
-    temp.append(el for el in cursor.fetchall())
-    #temp = cursor.fetchall()
+                WHERE sittebillett.ordreNr == ?
+    """
+    cursor.execute(quer, (orderNr, ))
+    temp = [list(x) for x in cursor.fetchall()]
     return temp
 
 def getbednums(cursor, orderNr):
-    temp = []
-    cursor.execute(f"""
+    """
+    Hjelpefunksjon til getOrderInfo som gir en liste over senger knyttet til denne kunden
+    INPUT:
+            ordreNR: Ordrenummer til ordren 
+    OUTPUT:
+            En liste med sengenummer, vognnummer og kupenummer knyttet til seng(ene) på denne ordren
+    """
+
+    quer = """
                 SELECT sengebillett.sengNr, sengebillett.vognrNr, seng.kupeNr
                 FROM sengebillett
                 NATURAL JOIN seng
-                WHERE sengebillett.ordreNr == '{orderNr}'
-    """)
-    temp.append(el for el in cursor.fetchall())
-    #temp = cursor.fetchall()
-    print("temp: ", temp)
+                WHERE sengebillett.ordreNr == ?
+    """
+    cursor.execute(quer, (orderNr, ))
+    temp = [list(x) for x in cursor.fetchall()]
     return temp
-    
 
 
-
-
-# [(10, 1, 1, 'NULL', 'NULL', 10, 'Steinkjer', 'Fauske', '03-04-2023'),
-#  (10, 2, 4, 'NULL', 'NULL', 10, 'Mosjøen', 'Bodø', '04-04-2023')]
-
-
-
-    #  cursor.execute(f""" 
-    #             SELECT sittebillett.stolnr, sittebillett.vognnr, kundeordre.forekomstID, kundeordre.startstasjon, kundeordre.endestasjon
-    #             FROM
-    #             Sittebillett 
-    #             NATURAL JOIN Kundeordre
-    #             NATURAL JOIN Togruteforekomst
-    #             WHERE togruteforekomst.Ukedag == '03-04-2023'
-    #             AND Togruteforekomst.forekomstID = '1'
-    #             """)
-                    #JOIN sengebillett ON sengebillett.OrdreNR == Kundeordre.OrdreNr
-                    #JOIN seng ON sengebillett.sengNr == seng.sengNR

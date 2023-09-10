@@ -41,13 +41,10 @@ q.db_insert(cursor, "RutePaStrekning", ['1', 'Mosjøen', 'Mo i Rana'])
 q.db_insert(cursor, "RutePaStrekning", ['1', 'Mo i Rana', 'Fauske'])
 q.db_insert(cursor, "RutePaStrekning", ['1', 'Fauske', 'Bodø'])
 
-q.db_insert(cursor, "Togruteforekomst", ['1', '03-04-2023', '1'])
-q.db_insert(cursor, "Togruteforekomst", ['2', '04-04-2023', '1'])
-
-
-
-
-
+q.db_insert(cursor, "Togruteforekomst", ['1', '02-04-2023', '1'])
+q.db_insert(cursor, "Togruteforekomst", ['2', '03-04-2023', '1'])
+q.db_insert(cursor, "Togruteforekomst", ['3', '04-04-2023', '1'])
+q.db_insert(cursor, "Togruteforekomst", ['4', '05-04-2023', '1'])
 
 #Nattog fra Trondheim til Bodø
 
@@ -83,8 +80,10 @@ q.db_insert(cursor, "RutePaStrekning", ['2', 'Mosjøen', 'Mo i Rana'])
 q.db_insert(cursor, "RutePaStrekning", ['2', 'Mo i Rana', 'Fauske'])
 q.db_insert(cursor, "RutePaStrekning", ['2', 'Fauske', 'Bodø'])
 
-q.db_insert(cursor, "Togruteforekomst", ['3', '03-04-2023', '2'])
-q.db_insert(cursor, "Togruteforekomst", ['4', '04-04-2023', '2'])
+q.db_insert(cursor, "Togruteforekomst", ['5', '02-04-2023', '2'])
+q.db_insert(cursor, "Togruteforekomst", ['6', '03-04-2023', '2'])
+q.db_insert(cursor, "Togruteforekomst", ['7', '04-04-2023', '2'])
+q.db_insert(cursor, "Togruteforekomst", ['8', '05-04-2023', '2'])
 
 
 
@@ -115,8 +114,10 @@ q.db_insert(cursor, "RutePaStrekning", ['3', 'Mosjøen', 'Steinkjer'])
 q.db_insert(cursor, "RutePaStrekning", ['3', 'Steinkjer', 'Trondheim S'])
 
 
-q.db_insert(cursor, "Togruteforekomst", ['5', '03-04-2023', '3'])
-q.db_insert(cursor, "Togruteforekomst", ['6', '04-04-2023', '3'])
+q.db_insert(cursor, "Togruteforekomst", ['8', '02-04-2023', '3'])
+q.db_insert(cursor, "Togruteforekomst", ['9', '03-04-2023', '3'])
+q.db_insert(cursor, "Togruteforekomst", ['10', '04-04-2023', '3'])
+q.db_insert(cursor, "Togruteforekomst", ['11', '05-04-2023', '3'])
 
 
 

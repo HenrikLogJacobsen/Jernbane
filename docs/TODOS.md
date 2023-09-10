@@ -1,1 +1,0 @@
-- Alle stopp i banestrekning og delstrekning ved navn "Trondheim" må endres til "Trondheim S"
